@@ -2,7 +2,10 @@
 // license that can be found in the LICENSE file.
 // Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-use std::{io, net::TcpStream};
+use std::io;
+
+#[cfg(feature = "tls")]
+use std::net::TcpStream;
 
 use thiserror::Error as ThisError;
 
@@ -17,9 +20,11 @@ pub enum Error {
     #[error("io failure")]
     Io(#[from] io::Error),
     /// Occurs when the TLS handshake fails.
+    #[cfg(feature = "tls")]
     #[error("tls handshake failure")]
     TlsHandshake(#[from] native_tls::HandshakeError<TcpStream>),
     /// Occurs when any TLS error happen.
+    #[cfg(feature = "tls")]
     #[error("tls connection failure")]
     Tls(#[from] native_tls::Error),
 }

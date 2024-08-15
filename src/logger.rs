@@ -13,6 +13,7 @@ use std::{
 
 use env_filter::Filter;
 use log::{LevelFilter, Log, Metadata, Record};
+#[cfg(feature = "tls")]
 use native_tls::{TlsConnector, TlsStream};
 
 use crate::{Builder, Error, GelfRecord, Map, Value};
@@ -101,6 +102,7 @@ impl Writer {
             Target::Tcp(TcpTarget {
                 hostname,
                 port,
+                #[cfg(feature = "tls")]
                 tls,
                 connect_timeout,
                 write_timeout,
@@ -117,6 +119,7 @@ impl Writer {
                                 TcpConnection::new(
                                     &hostname,
                                     port,
+                                    #[cfg(feature = "tls")]
                                     tls,
                                     connect_timeout,
                                     write_timeout,
@@ -212,6 +215,7 @@ pub struct TcpTarget {
     pub port: u16,
     /// Whether to use TLS over TCP. The hostname specified above will be used
     /// to perform the TLS handshake.
+    #[cfg(feature = "tls")]
     pub tls: bool,
     /// Set the connection timeout duration. If `None` is specified, the socket
     /// connection phase can block indefinitely.
@@ -246,6 +250,7 @@ impl Default for TcpTarget {
         Self {
             hostname: "127.0.0.1".to_owned(),
             port: 2202,
+            #[cfg(feature = "tls")]
             tls: false,
             connect_timeout: None,
             write_timeout: None,
@@ -257,6 +262,7 @@ impl Default for TcpTarget {
 
 enum TcpConnection {
     Raw(TcpStream),
+    #[cfg(feature = "tls")]
     Tls(TlsStream<TcpStream>),
 }
 
@@ -264,6 +270,7 @@ impl TcpConnection {
     fn new(
         hostname: &str,
         port: u16,
+        #[cfg(feature = "tls")]
         tls: bool,
         connect_timeout: Option<Duration>,
         write_timeout: Option<Duration>,
@@ -275,17 +282,23 @@ impl TcpConnection {
         }?;
         stream.set_write_timeout(write_timeout)?;
 
-        Ok(if tls {
+        #[cfg(feature = "tls")]
+        if tls {
             let connector = TlsConnector::new()?;
-            Self::Tls(connector.connect(hostname, stream)?)
-        } else {
-            Self::Raw(stream)
-        })
+            return Ok(Self::Tls(connector.connect(hostname, stream)?))
+        }
+        else {
+            Ok(Self::Raw(stream))
+        }
+
+        #[cfg(not(feature = "tls"))]
+        Ok(Self::Raw(stream))
     }
 
     fn write_all(&mut self, data: &[u8]) -> Result<(), io::Error> {
         match self {
             TcpConnection::Raw(stream) => stream.write_all(data),
+            #[cfg(feature = "tls")]
             TcpConnection::Tls(stream) => stream.write_all(data),
         }
     }
@@ -293,6 +306,7 @@ impl TcpConnection {
     fn flush(&mut self) -> Result<(), io::Error> {
         match self {
             TcpConnection::Raw(stream) => stream.flush(),
+            #[cfg(feature = "tls")]
             TcpConnection::Tls(stream) => stream.flush(),
         }
     }

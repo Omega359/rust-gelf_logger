@@ -159,6 +159,7 @@ impl Builder {
     /// Enable or disable TLS support.
     ///
     /// If the target is currently not TCP, it will first set it.
+    #[cfg(feature = "tls")]
     pub fn tls(mut self, tls: bool) -> Self {
         self.tcp_config_or_default().tls = tls;
         self
@@ -227,6 +228,7 @@ impl Builder {
     ///     .type_suffix(true)
     /// ```
     #[cfg(feature = "ovh-ldp")]
+    #[cfg(feature = "tls")]
     pub fn ovh_ldp(self, hostname: String, token: String) -> Self {
         self.hostname(hostname)
             .port(12202)
