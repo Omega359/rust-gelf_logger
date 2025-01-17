@@ -177,6 +177,7 @@ impl Writer {
                     let _ = io::stderr().write_all(&data);
                 }
                 Writer::Pipe(tx) => {
+                    println!("Sending data to tx pipe");
                     let _ = tx.send(Op::Data(data));
                 }
             },
