@@ -57,9 +57,9 @@ impl Log for GelfLogger {
     }
 
     fn log(&self, record: &Record<'_>) {
-        println("received record {:#?}", record);
+        println!("received record {:#?}", record);
         if !self.matches(record) {
-            println("Record was filtered out");
+            println!("Record was filtered out");
             return;
         }
 
@@ -69,7 +69,7 @@ impl Log for GelfLogger {
             .extend(self.additional_fields.clone());
 
         let Ok(mut data) = serde_json::to_vec(&record) else {
-            println("Unable to serialize record");
+            println!("Unable to serialize record");
             return;
         };
 
@@ -78,7 +78,7 @@ impl Log for GelfLogger {
             data.push(b'\0');
         }
 
-        println("Writing data to writer");
+        println!("Writing data to writer");
         self.writer.write(Op::Data(data));
     }
     
